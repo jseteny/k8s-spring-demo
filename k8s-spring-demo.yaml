@@ -1,0 +1,110 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    POSTGRES_PASSWORD: dGltZXRyYWNrZXI=
+    POSTGRES_USER: dGltZXRyYWNrZXI=
+  kind: Secret
+  metadata:
+    labels:
+      app: k8s-spring-demo
+    name: k8s-spring-demo-secret
+  type: Opaque
+- apiVersion: v1
+  data:
+    POSTGRES_URL: jdbc:postgresql://host.docker.internal:5434/postgres
+  kind: ConfigMap
+  metadata:
+    labels:
+      app: k8s-spring-demo
+    name: k8s-spring-demo-config
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    labels:
+      app: k8s-spring-demo
+      k8s-app: k8s-spring-demo
+    name: k8s-spring-demo
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: k8s-spring-demo
+        k8s-app: k8s-spring-demo
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: k8s-spring-demo
+          k8s-app: k8s-spring-demo
+        name: k8s-spring-demo
+      spec:
+        containers:
+        - env:
+          - name: POSTGRES_URL
+            valueFrom:
+              configMapKeyRef:
+                key: POSTGRES_URL
+                name: k8s-spring-demo-config
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                key: POSTGRES_USER
+                name: k8s-spring-demo-secret
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: POSTGRES_PASSWORD
+                name: k8s-spring-demo-secret
+          image: localhost:5000/k8s-spring-demo
+          imagePullPolicy: Always
+          name: k8s-spring-demo
+        restartPolicy: Always
+  status:
+    replicas: 1
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: k8s-spring-demo
+      k8s-app: k8s-spring-demo
+    name: k8s-spring-demo-service
+  spec:
+    ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: k8s-spring-demo
+      k8s-app: k8s-spring-demo
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    name: k8s-spring-demo-ingress
+  spec:
+    rules:
+    - http:
+        paths:
+        - backend:
+            serviceName: k8s-spring-demo-service
+            servicePort: 8080
+          path: /k8s-spring-demo
+  status:
+    loadBalancer:
+      ingress:
+      - {}
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
+
