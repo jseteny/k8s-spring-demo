@@ -5,7 +5,7 @@
 
     <groupId>hu.lippert.demo</groupId>
     <artifactId>k8s-spring-demo</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>war</packaging>
 
     <name>k8s-spring-demo</name>
